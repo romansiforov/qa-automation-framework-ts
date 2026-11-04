@@ -1,10 +1,14 @@
 name: Playwright Tests
 
 on:
+  workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, master]
   pull_request:
-    branches: [main]
+    branches: [main, master]
+
+permissions:
+  contents: write
 
 jobs:
   test:
@@ -27,14 +31,10 @@ jobs:
         env:
           HUSKY: 0
 
-      - name: Type-check
-        run: npm run type-check
-
-      - name: Lint
-        run: npm run lint
+      - name: Quality gates
+        run: npm run quality:check
 
       - name: Cache Playwright browsers
-        id: playwright-cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
@@ -44,7 +44,28 @@ jobs:
         run: npx playwright install --with-deps
 
       - name: Run Playwright tests
+        id: tests
         run: npx playwright test
+        continue-on-error: true
+
+      - name: Generate Allure report
+        id: allure
+        if: ${{ !cancelled() }}
+        run: npm run allure:generate
+
+      - name: Publish Allure report to GitHub Pages
+        if: >-
+          ${{
+            !cancelled() &&
+            steps.allure.outcome == 'success' &&
+            github.event_name != 'pull_request' &&
+            (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+          }}
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: allure-report
 
       - name: Upload Playwright report and traces
         if: ${{ !cancelled() }}
@@ -54,5 +75,10 @@ jobs:
           path: |
             playwright-report/
             test-results/
+            allure-report/
           retention-days: 14
           if-no-files-found: ignore
+
+      - name: Mark the job failed when tests failed
+        if: ${{ steps.tests.outcome == 'failure' }}
+        run: exit 1
