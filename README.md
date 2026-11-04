@@ -73,20 +73,20 @@ npx playwright install --with-deps
 
 ## Scripts
 
-| Script | What it does |
-| --- | --- |
-| `npm run test:e2e` | Headless Playwright run |
-| `npm run test:ui` | Playwright UI mode |
-| `npm run test:headed` | Headed browsers |
-| `npm run test:e2e:article` | Hybrid article flow only |
-| `npm run test:api` | Tests under `src/tests/api` |
-| `npm run test:ui-only` | Tests under `src/tests/ui` |
-| `npm run quality:check` | `tsc --noEmit`, ESLint, and Prettier check |
-| `npm run test:allure` | Run tests, generate the Allure report, and open it |
-| `npm run report:show` | Open the Playwright HTML report |
-| `npm run allure:generate` | Build `allure-report` from `allure-results` |
-| `npm run allure:open` | Open the generated Allure report |
-| `npm run allure:clear` | Delete Allure result and report folders |
+| Script                     | What it does                                       |
+| -------------------------- | -------------------------------------------------- |
+| `npm run test:e2e`         | Headless Playwright run                            |
+| `npm run test:ui`          | Playwright UI mode                                 |
+| `npm run test:headed`      | Headed browsers                                    |
+| `npm run test:e2e:article` | Hybrid article flow only                           |
+| `npm run test:api`         | Tests under `src/tests/api`                        |
+| `npm run test:ui-only`     | Tests under `src/tests/ui`                         |
+| `npm run quality:check`    | `tsc --noEmit`, ESLint, and Prettier check         |
+| `npm run test:allure`      | Run tests, generate the Allure report, and open it |
+| `npm run report:show`      | Open the Playwright HTML report                    |
+| `npm run allure:generate`  | Build `allure-report` from `allure-results`        |
+| `npm run allure:open`      | Open the generated Allure report                   |
+| `npm run allure:clear`     | Delete Allure result and report folders            |
 
 `npm run type-check`, `npm run lint`, and `npm run format:ci` are the individual quality commands.
 

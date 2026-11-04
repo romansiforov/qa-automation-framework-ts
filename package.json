@@ -24,8 +24,11 @@
     "test:allure": "playwright test && npm run allure:generate && npm run allure:open"
   },
   "lint-staged": {
-    "*.ts": [
+    "*.{ts,js}": [
       "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
       "prettier --write"
     ]
   },
