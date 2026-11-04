@@ -28,7 +28,7 @@ jobs:
           HUSKY: 0
 
       - name: Type-check
-        run: npm run check-types
+        run: npm run type-check
 
       - name: Lint
         run: npm run lint
