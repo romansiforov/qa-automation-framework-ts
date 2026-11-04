@@ -1,0 +1,7 @@
+"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
+"","3293","publishes an article from the editor UI","firefox","2026-11-04","passed","2026-11-04","Hybrid Article Flow","e2e/article-flow.test.ts","",""
+"","2757","shows an article prepared through the API","chromium","2026-11-04","passed","2026-11-04","Hybrid Article Flow","e2e/article-flow.test.ts","",""
+"","2680","publishes an article from the editor UI","chromium","2026-11-04","passed","2026-11-04","Hybrid Article Flow","e2e/article-flow.test.ts","",""
+"","3604","shows an article prepared through the API","firefox","2026-11-04","passed","2026-11-04","Hybrid Article Flow","e2e/article-flow.test.ts","",""
+"","3104","shows an article prepared through the API","webkit","2026-11-04","passed","2026-11-04","Hybrid Article Flow","e2e/article-flow.test.ts","",""
+"","3635","publishes an article from the editor UI","webkit","2026-11-04","passed","2026-11-04","Hybrid Article Flow","e2e/article-flow.test.ts","",""
