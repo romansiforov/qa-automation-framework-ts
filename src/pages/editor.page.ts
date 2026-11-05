@@ -1,4 +1,5 @@
 import { type Locator } from '@playwright/test';
+import { Urls } from '../constants/urls.enum';
 import { PageHolder } from './page-holder';
 
 export interface ArticleForm {
@@ -9,32 +10,80 @@ export interface ArticleForm {
 
 /**
  * Article editor at `/editor`.
+ * Open a new article with `app.navigateTo(Urls.Editor)`.
  */
 export class EditorPage extends PageHolder {
-  readonly titleInput: Locator = this.page.getByRole('textbox', {
-    name: 'Article Title',
-  });
-  readonly descriptionInput: Locator = this.page.getByRole('textbox', {
-    name: "What's this article about?",
-  });
-  readonly bodyInput: Locator = this.page.getByRole('textbox', {
-    name: 'Write your article (in markdown)',
-  });
-  readonly publishButton: Locator = this.page.getByRole('button', {
-    name: 'Publish Article',
-  });
+  readonly editorUrlBySlug = (slug: string): string => {
+    return `${Urls.Editor}/${encodeURIComponent(slug)}`;
+  };
 
-  async goto(): Promise<void> {
-    await this.page.goto('/editor');
+  readonly titleInput = (): Locator => this.page.locator('input[name="title"]');
+
+  readonly descriptionInput = (): Locator =>
+    this.page.locator('input[name="description"]');
+
+  readonly bodyInput = (): Locator =>
+    this.page.locator('textarea[name="body"]');
+
+  readonly publishButton = (): Locator =>
+    this.page.getByRole('button', { name: 'Publish Article' });
+
+  /**
+   * Waits until the editor form is rendered and ready for input.
+   */
+  async waitForEditorLoaded(): Promise<void> {
+    await this.titleInput().waitFor({ state: 'visible', timeout: 10000 });
+    await this.bodyInput().waitFor({ state: 'visible', timeout: 10000 });
+  }
+
+  /**
+   * Waits until the title field is visible, then returns its value.
+   */
+  async getTitleText(): Promise<string> {
+    await this.titleInput().waitFor({ state: 'visible', timeout: 10000 });
+    return (await this.titleInput().inputValue()) ?? '';
+  }
+
+  /**
+   * Waits until the description field is visible, then returns its value.
+   */
+  async getDescriptionText(): Promise<string> {
+    await this.descriptionInput().waitFor({ state: 'visible', timeout: 10000 });
+    return (await this.descriptionInput().inputValue()) ?? '';
+  }
+
+  /**
+   * Waits until the body field is visible, then returns its value.
+   */
+  async getBodyText(): Promise<string> {
+    await this.bodyInput().waitFor({ state: 'visible', timeout: 10000 });
+    return (await this.bodyInput().inputValue()) ?? '';
+  }
+
+  async fillTitle(title: string): Promise<void> {
+    await this.titleInput().fill(title);
+  }
+
+  async fillDescription(description: string): Promise<void> {
+    await this.descriptionInput().fill(description);
+  }
+
+  async fillBody(body: string): Promise<void> {
+    await this.bodyInput().fill(body);
+  }
+
+  async clickPublishButton(): Promise<void> {
+    await this.publishButton().click();
   }
 
   /**
    * Fills the editor form and publishes the article.
    */
-  async createArticle(article: ArticleForm): Promise<void> {
-    await this.titleInput.fill(article.title);
-    await this.descriptionInput.fill(article.description);
-    await this.bodyInput.fill(article.body);
-    await this.publishButton.click();
+  async submitArticle(article: ArticleForm): Promise<void> {
+    await this.waitForEditorLoaded();
+    await this.fillTitle(article.title);
+    await this.fillDescription(article.description);
+    await this.fillBody(article.body);
+    await this.clickPublishButton();
   }
 }

@@ -19,7 +19,7 @@ API calls seed and clean data. UI tests verify the signed-in journey. One global
 
 **Data.** `@faker-js/faker` builds unique usernames, emails, and article titles inside `DataGenerator`.
 
-**Teardown.** Specs do not wrap the body in `try/finally`. `test.afterEach` deletes the created article and records that step in the report.
+**Teardown.** `test.afterEach` deletes each created article through the API, so the next test starts from a clean state.
 
 ## Architecture
 
@@ -61,13 +61,42 @@ src/
 playwright/.auth/           generated session, not committed
 ```
 
-## Prerequisites and setup
+## Setup
 
-- Node.js 20. Node.js 18 is the minimum. CI uses 20.
-- Copy `.env.example` to `.env`. `USER_EMAIL` and `USER_PASSWORD` must be set. The suite registers its own user and does not log in with those values. `BASE_URL` defaults to `https://demo.realworld.show`.
+### Prerequisites
+
+- Node.js 20 or newer.
+
+### 1. Clone the repository
+
+```bash
+git clone <repository-url>
+cd RS_autotests
+```
+
+### 2. Install project dependencies
 
 ```bash
 npm ci
+```
+
+### 3. Configure the environment
+
+```bash
+cp .env.example .env
+```
+
+| Variable        | Guideline                                                                                                         |
+| --------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `USER_EMAIL`    | Required. Any non-empty value is enough. The suite registers its own user and does not sign in with this address. |
+| `USER_PASSWORD` | Required. Any non-empty value is enough. It is not sent as the login password.                                    |
+| `BASE_URL`      | Optional. Defaults to `https://demo.realworld.show` when omitted.                                                 |
+
+`API_URL` defaults to `https://api.realworld.show/api`. `ENVIRONMENT` is `dev` or `staging` and defaults to `dev`.
+
+### 4. Install Playwright browsers
+
+```bash
 npx playwright install --with-deps
 ```
 

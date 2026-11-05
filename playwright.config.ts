@@ -6,7 +6,7 @@ import { CONFIG } from './src/config/env.config';
  */
 export default defineConfig({
   testDir: './src/tests',
-  testMatch: '**/*.test.ts',
+  testMatch: '**/*.{test,spec}.ts',
   globalSetup: './src/support/global-setup.ts',
   /* Run tests in files in parallel */
   fullyParallel: true,
