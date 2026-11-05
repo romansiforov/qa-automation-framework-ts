@@ -28,3 +28,9 @@ export interface UserData {
 export interface UserResponse {
   user: UserData;
 }
+
+/** Credentials sent to the API and the user record returned after registration. */
+export interface RegisteredUser {
+  credentials: RegisterPayload;
+  user: UserData;
+}

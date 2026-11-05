@@ -2,6 +2,7 @@ import { CONFIG } from '../../config/env.config';
 import {
   LoginPayload,
   RegisterPayload,
+  RegisteredUser,
   UserResponse,
 } from '../models/user.model';
 import { RequestHolder } from '../request-holder';
@@ -21,35 +22,39 @@ export class AuthController extends RequestHolder {
       data: body,
     });
 
-    if (!response.ok()) {
-      throw new Error(
-        `Login failed: ${response.status()} ${response.statusText()} - ${await response.text()}`
-      );
-    }
-
-    const { user } = (await response.json()) as UserResponse;
+    const { user } = await this.readJson<UserResponse>(response, 200, 'log in');
     return user.token;
+  }
+
+  /**
+   * Registers a user. Contract status: 201.
+   * Generates a unique user when no payload is provided.
+   */
+  async register(
+    payload: RegisterPayload = DataGenerator.generateUserData()
+  ): Promise<RegisteredUser> {
+    const response = await this.request.post(`${apiUrl}/users`, {
+      data: payload,
+    });
+    const { user } = await this.readJson<UserResponse>(
+      response,
+      201,
+      'register user'
+    );
+
+    return { credentials: payload, user };
   }
 
   /**
    * Registers a unique user, then returns the email and password used to log in.
    */
   private async registerAndBuildLogin(): Promise<LoginPayload> {
-    const registration: RegisterPayload = DataGenerator.generateUserData();
-    const response = await this.request.post(`${apiUrl}/users`, {
-      data: registration,
-    });
-
-    if (!response.ok()) {
-      throw new Error(
-        `Registration failed: ${response.status()} ${response.statusText()} - ${await response.text()}`
-      );
-    }
+    const { credentials } = await this.register();
 
     return {
       user: {
-        email: registration.user.email,
-        password: registration.user.password,
+        email: credentials.user.email,
+        password: credentials.user.password,
       },
     };
   }

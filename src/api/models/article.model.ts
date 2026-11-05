@@ -1,9 +1,21 @@
+import { Profile } from './profile.model';
+
 // Payload for creating an article
 export interface CreateArticlePayload {
   article: {
     title: string;
     description: string;
     body: string;
+    tagList?: string[];
+  };
+}
+
+// Payload for updating an article. Every field is optional.
+export interface UpdateArticlePayload {
+  article: {
+    title?: string;
+    description?: string;
+    body?: string;
     tagList?: string[];
   };
 }
@@ -19,12 +31,7 @@ export interface ArticleData {
   updatedAt: string;
   favorited: boolean;
   favoritesCount: number;
-  author: {
-    username: string;
-    bio: string | null;
-    image: string;
-    following: boolean;
-  };
+  author: Profile;
 }
 
 // Server response when creating or fetching a single article

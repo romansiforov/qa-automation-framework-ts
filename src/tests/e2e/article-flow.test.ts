@@ -1,5 +1,7 @@
-import { test, expect } from '../../fixtures/test.fixture';
+import { Urls } from '../../constants/urls.enum';
+import { expect, test } from '../../fixtures/test.fixture';
 import { DataGenerator } from '../../utils/data-generator';
+import { StringHelper } from '../../utils/string.helper';
 
 test.describe('Hybrid Article Flow', () => {
   let createdSlug: string | null = null;
@@ -11,55 +13,81 @@ test.describe('Hybrid Article Flow', () => {
       return;
     }
 
-    await test.step(`Teardown: Delete article via API (${slug})`, async () => {
+    try {
       await api.articles.deleteArticle(authToken, slug);
+    } catch (error) {
+      console.error(`Failed to cleanup article with slug: ${slug}`, error);
+    } finally {
       createdSlug = null;
-    });
+    }
   });
 
-  test('shows an article prepared through the API', async ({
-    app,
-    api,
-    authToken,
-  }) => {
-    const { article: draft } = DataGenerator.generateArticleData();
+  test(
+    'shows an article prepared through the API',
+    { tag: ['@e2e', '@articles', '@smoke'] },
+    async ({ app, api, authToken }) => {
+      const { article: draft } = DataGenerator.generateArticleData();
 
-    await test.step('Arrange: Create article via API', async () => {
-      const { article } = await api.articles.createArticle(authToken, {
-        article: draft,
+      await test.step('Arrange: Create article via API', async () => {
+        const { article } = await api.articles.createArticle(authToken, {
+          article: draft,
+        });
+        createdSlug = article.slug;
       });
-      createdSlug = article.slug;
-    });
 
-    await test.step('Act: Navigate directly to the created article', async () => {
-      await app.homePage.goto();
-      await app.page.goto(`/article/${createdSlug}`);
-    });
+      await test.step('Act: Navigate directly to the created article', async () => {
+        await app.navigateTo(Urls.Home);
+        await app.navigateTo(
+          StringHelper.getArticleUrlByTitle(draft.title, Urls.Article),
+          undefined,
+          'networkidle'
+        );
+      });
 
-    await test.step('Assert: Article title is visible in UI', async () => {
-      await expect(
-        app.page.getByRole('heading', { name: draft.title, exact: true })
-      ).toBeVisible();
-    });
-  });
+      await test.step('Assert: Article title, content, and URL', async () => {
+        const expectedUrl = StringHelper.getArticleUrlByTitle(
+          draft.title,
+          Urls.Article
+        );
+
+        await app.articlePage.waitForArticleLoaded();
+        const actualTitle = await app.articlePage.getTitleText();
+        const actualContent = await app.articlePage.getContentText();
+
+        expect(app.page.url()).toContain(expectedUrl);
+        expect(actualTitle).toBe(draft.title);
+        expect(actualContent).toContain(
+          StringHelper.getFirstBodyLine(draft.body)
+        );
+      });
+    }
+  );
 
   test('publishes an article from the editor UI', async ({ app }) => {
     const { article } = DataGenerator.generateArticleData();
 
-    await test.step('Act: Navigate to editor and create an article via UI', async () => {
-      await app.homePage.goto();
-      await app.editorPage.goto();
-      await app.editorPage.createArticle(article);
-      await app.page.waitForURL(/\/article\//);
-
-      const slug = new URL(app.page.url()).pathname.split('/').at(-1);
-      createdSlug = slug ? decodeURIComponent(slug) : null;
+    await test.step('Act: Navigate to editor and publish an article', async () => {
+      await app.navigateTo(Urls.Home);
+      await app.navigateTo(Urls.Editor);
+      await app.editorPage.submitArticle(article);
+      createdSlug = StringHelper.getSlugFromTitle(article.title);
     });
 
     await test.step('Assert: Article is successfully published and rendered', async () => {
-      await expect(
-        app.page.getByRole('heading', { name: article.title, exact: true })
-      ).toBeVisible();
+      const expectedUrl = StringHelper.getArticleUrlByTitle(
+        article.title,
+        Urls.Article
+      );
+
+      await expect(app.articlePage.titleHeading()).toBeVisible();
+      const actualTitle = await app.articlePage.getTitleText();
+      const actualContent = await app.articlePage.getContentText();
+
+      expect(app.page.url()).toContain(expectedUrl);
+      expect(actualTitle).toBe(article.title);
+      expect(actualContent).toContain(
+        StringHelper.getFirstBodyLine(article.body)
+      );
     });
   });
 });

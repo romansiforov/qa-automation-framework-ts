@@ -1,103 +1,124 @@
 # Conduit Test Automation
 
-Playwright and TypeScript framework for hybrid UI and API testing of [Conduit (RealWorld)](https://demo.realworld.show/).
+Playwright and TypeScript framework for the [Conduit (RealWorld)](https://demo.realworld.show/) demo. API tests check the contract. UI tests check the signed-in and signed-out journeys. Hybrid tests create data through the API and assert it in the browser.
 
-API calls seed and clean data. UI tests verify the signed-in journey. One global login is reused through Playwright `storageState`.
+The target UI is `https://demo.realworld.show`. The API is `https://api.realworld.show/api`.
 
-![CI](https://img.shields.io/badge/CI-GitHub_Actions-2088FF)
-![Playwright](https://img.shields.io/badge/Playwright-E2E%20%26%20API-2EAD33)
-![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6)
-![Allure](https://img.shields.io/badge/Reports-Allure-FF6A00)
+## Tech stack
 
-## Architectural highlights
+| Tool                    | Role                                                                 |
+| ----------------------- | -------------------------------------------------------------------- |
+| Playwright 1.64         | Browser automation, `APIRequestContext` clients, HTML report, traces |
+| TypeScript              | Strict models for requests, responses, pages, and fixtures           |
+| Page Object Model       | `PageHolder` base, `Application` aggregator                          |
+| Allure                  | `allure-playwright` results and an HTML report                       |
+| Faker                   | Unique users and articles                                            |
+| ESLint, Prettier, Husky | Local quality gate, also run in CI                                   |
 
-**Hybrid testing.** Tests create articles through the API, then assert the same data in the browser. Cleanup goes through the API as well, so the UI path stays short.
-
-**Fixtures and page objects.** `PageHolder` and `RequestHolder` own the Playwright `page` and `request`. Child pages and controllers declare fields only. Tests talk to two aggregators: `app` (`homePage`, `editorPage`) and `api` (`auth`, `articles`).
-
-**Global auth.** `globalSetup` registers one user, stores `jwtToken` in `playwright/.auth/user.json`, and every browser project loads that file as `storageState`. The `authToken` fixture reads the same token, so API calls and the UI belong to one account. This demo only returns an article to its author.
-
-**Data.** `@faker-js/faker` builds unique usernames, emails, and article titles inside `DataGenerator`.
-
-**Teardown.** Specs do not wrap the body in `try/finally`. `test.afterEach` deletes the created article and records that step in the report.
+API calls use Playwright's request API. There is no separate HTTP client.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  tests["Tests e2e / ui / api"] --> fixtures["Custom fixtures"]
+  tests["Tests api / ui / e2e"] --> fixtures["Fixtures"]
   fixtures --> app["app: Application"]
   fixtures --> api["api: API"]
   fixtures --> token["authToken"]
-  app --> pages["Page objects via PageHolder"]
+  app --> pages["Pages via PageHolder"]
   api --> controllers["Controllers via RequestHolder"]
   token --> storage["playwright/.auth/user.json"]
-  pages --> storage
-  controllers --> conduit["Conduit API"]
   pages --> ui["Conduit UI"]
+  controllers --> conduit["Conduit API"]
 ```
 
-## Directory structure
+`globalSetup` registers one user, signs in, and writes `playwright/.auth/user.json`. Every browser project loads that file as `storageState`. The `authToken` fixture reads the same token, so the browser and the API act as one author. This demo returns an article only to the user who created it.
+
+Authentication UI tests clear that storage and start signed out. One of them injects the registration token into `localStorage` under `jwtToken` before opening the home page. That is the key this frontend reads.
+
+## Principles
+
+**Assertions stay in tests.** Page objects expose locators, actions, waits, and getters. They do not call `expect`. A test step named `Assert` reads those values and checks them.
+
+**The API prepares data.** Article flows create and delete articles through `api.articles`. The UI path stays short. `DataGenerator` builds a unique title, body, and user for each run.
+
+**Status codes are part of the contract.** Create expects `201`, read and update expect `200`, and delete expects `204`. A deleted article is then fetched again. `getArticle` accepts only `200`, so the test expects that call to fail with `404`.
+
+**Navigation is centralized.** `app.navigateTo` is the only `page.goto`. Routes live in `Urls`. Article and editor slugs are built on the page objects.
+
+## Project structure
 
 ```text
 src/
   api/
-    api.ts                  API aggregator
-    request-holder.ts       shared APIRequestContext
-    controllers/            auth and articles
-    models/                 request and response types
-  config/env.config.ts      typed environment config
-  fixtures/test.fixture.ts  app, api, authToken, createArticle
+    api.ts                 auth, articles, and comments
+    request-holder.ts      status checks and JSON parsing
+    controllers/           one controller per resource
+    models/                request and response types
+  config/env.config.ts     typed BASE_URL, API_URL, and credentials
+  constants/urls.enum.ts   application routes
+  fixtures/test.fixture.ts app, api, authToken, createArticle
   pages/
-    page-holder.ts
-    application.ts          homePage and editorPage
-  support/global-setup.ts   one-time login and storageState
+    page-holder.ts         shared page and navigateTo
+    application.ts         home, login, editor, and article pages
+  support/global-setup.ts  one login and the storageState file
   tests/
-    e2e/                    hybrid UI + API flows
-    ui/                     UI-only tests
-    api/                    API-only tests
-  utils/data-generator.ts
-.github/workflows/          CI quality gates and Playwright
-playwright/.auth/           generated session, not committed
+    api/                   article CRUD
+    ui/                    login validation, sign-in, token injection
+    e2e/                   hybrid article create and publish
+  utils/
+    data-generator.ts      faker payloads
+    string.helper.ts       title to slug and article path
+.github/workflows/         quality gate, Playwright, Allure
+playwright/.auth/          generated session, not committed
 ```
 
-## Prerequisites and setup
+## Setup
 
-- Node.js 20. Node.js 18 is the minimum. CI uses 20.
-- Copy `.env.example` to `.env`. `USER_EMAIL` and `USER_PASSWORD` must be set. The suite registers its own user and does not log in with those values. `BASE_URL` defaults to `https://demo.realworld.show`.
+Node.js 20 or newer.
 
 ```bash
+git clone <repository-url>
+cd RS_autotests
 npm ci
+cp .env.example .env
 npx playwright install --with-deps
 ```
 
-## Scripts
+| Variable        | Guideline                                                                                        |
+| --------------- | ------------------------------------------------------------------------------------------------ |
+| `USER_EMAIL`    | Required and non-empty. The suite registers its own user and does not sign in with this address. |
+| `USER_PASSWORD` | Required and non-empty. It is not sent as the login password.                                    |
+| `BASE_URL`      | Optional. Defaults to `https://demo.realworld.show`.                                             |
+| `API_URL`       | Optional. Defaults to `https://api.realworld.show/api`.                                          |
+| `ENVIRONMENT`   | `dev` or `staging`. Defaults to `dev`.                                                           |
 
-| Script                     | What it does                                       |
-| -------------------------- | -------------------------------------------------- |
-| `npm run test:e2e`         | Headless Playwright run                            |
-| `npm run test:ui`          | Playwright UI mode                                 |
-| `npm run test:headed`      | Headed browsers                                    |
-| `npm run test:e2e:article` | Hybrid article flow only                           |
-| `npm run test:api`         | Tests under `src/tests/api`                        |
-| `npm run test:ui-only`     | Tests under `src/tests/ui`                         |
-| `npm run quality:check`    | `tsc --noEmit`, ESLint, and Prettier check         |
-| `npm run test:allure`      | Run tests, generate the Allure report, and open it |
-| `npm run report:show`      | Open the Playwright HTML report                    |
-| `npm run allure:generate`  | Build `allure-report` from `allure-results`        |
-| `npm run allure:open`      | Open the generated Allure report                   |
-| `npm run allure:clear`     | Delete Allure result and report folders            |
+## Execution
 
-`npm run type-check`, `npm run lint`, and `npm run format:ci` are the individual quality commands.
+| Command                    | What it runs                              |
+| -------------------------- | ----------------------------------------- |
+| `npm run test:api`         | Article CRUD under `src/tests/api`        |
+| `npm run test:ui-only`     | Authentication flows under `src/tests/ui` |
+| `npm run test:e2e:article` | Hybrid article flow                       |
+| `npm run test:e2e`         | The full suite, headless                  |
+| `npm run test:ui`          | Playwright UI mode                        |
+| `npm run test:headed`      | Headed browsers                           |
+| `npm run quality:check`    | `tsc --noEmit`, ESLint, and Prettier      |
+
+Projects are Chromium, Firefox, and WebKit. Add `--project=chromium` to run one browser. CI retries failed tests twice and uses one worker. Local runs do not retry.
+
+### Allure
+
+The Playwright config writes `allure-results` on every run.
+
+```bash
+npm run test:allure
+```
+
+That command runs the suite, builds `allure-report`, and opens it. The separate commands are `npm run allure:generate`, `npm run allure:open`, and `npm run allure:clear`. `npm run report:show` opens the Playwright HTML report.
 
 ## CI
 
-`.github/workflows/playwright.yml` runs on push and pull request to `main`, on `ubuntu-latest`.
+`.github/workflows/playwright.yml` runs on push and pull request to `main` and `master`, and on manual dispatch.
 
-1. Restore the npm cache and the Playwright browser cache.
-2. `npm ci` with Husky disabled.
-3. `npm run type-check` and `npm run lint`. A TypeScript error or an ESLint error fails the job.
-4. `npx playwright install --with-deps`, then a headless `npx playwright test`.
-5. Upload `playwright-report/` and `test-results/` with `actions/upload-artifact@v4` after a successful or failed run. Traces, screenshots, and videos are included when a test fails.
-
-The Allure reporter still writes `allure-results` during CI. The published artifact is the Playwright HTML report and traces. Generate the Allure HTML locally with `npm run allure:generate`.
+On `ubuntu-latest` with Node 20 it installs dependencies, runs `npm run quality:check`, installs Playwright browsers, and runs the suite. A TypeScript, ESLint, Prettier, or test failure fails the job. Traces, the Playwright report, and the Allure report are uploaded as artifacts for 14 days. On a push to `main` or `master`, the Allure report is also published to the `gh-pages` branch. Pull requests do not publish that branch.
