@@ -123,8 +123,11 @@ test.describe('Articles API CRUD', () => {
       createdSlug = null;
     });
 
-    await test.step('Assert: Article is deleted', async () => {
+    await test.step('Assert: Delete returns 204 and the article is gone', async () => {
       expect(status).toBe(204);
+      await expect(api.articles.getArticle(authToken, slug)).rejects.toThrow(
+        'received 404'
+      );
     });
   });
 });

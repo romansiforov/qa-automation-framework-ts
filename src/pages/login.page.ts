@@ -25,23 +25,8 @@ export class LoginPage extends PageHolder {
     await this.passwordInput().fill(password);
   }
 
-  /**
-   * Submits the form.
-   * An empty form keeps the button disabled, so the click is issued after the
-   * disabled state is cleared. The API then returns the blank-field errors.
-   */
   async clickSignIn(): Promise<void> {
-    const button = this.signInButton();
-
-    if (await button.isDisabled()) {
-      await button.evaluate((element: HTMLButtonElement) => {
-        element.removeAttribute('disabled');
-        element.click();
-      });
-      return;
-    }
-
-    await button.click();
+    await this.signInButton().click();
   }
 
   /**

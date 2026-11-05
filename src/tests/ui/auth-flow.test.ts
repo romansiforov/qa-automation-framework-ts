@@ -4,23 +4,30 @@ import { expect, test } from '../../fixtures/test.fixture';
 test.describe('Authentication UI Flow', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
-  test('shows validation errors when sign in is submitted empty', async ({
+  test('keeps Sign in disabled until both fields are filled', async ({
     app,
   }) => {
-    await test.step('Act: Open login and submit empty fields', async () => {
+    await test.step('Act: Open the login page with empty fields', async () => {
       await app.navigateTo(Urls.Login);
+    });
+
+    await test.step('Assert: Sign in stays disabled', async () => {
+      await expect(app.loginPage.signInButton()).toBeDisabled();
+    });
+  });
+
+  test('shows an error for invalid credentials', async ({ app }) => {
+    await test.step('Act: Submit an unknown email and password', async () => {
+      await app.navigateTo(Urls.Login);
+      await app.loginPage.fillEmail('nobody-auth-check@example.com');
+      await app.loginPage.fillPassword('wrong-password');
       await app.loginPage.clickSignIn();
     });
 
-    await test.step('Assert: Blank email and password are reported', async () => {
+    await test.step('Assert: The API rejects the credentials', async () => {
       const errors = await app.loginPage.getErrorMessageTexts();
 
-      expect(errors).toEqual(
-        expect.arrayContaining([
-          "email can't be blank",
-          "password can't be blank",
-        ])
-      );
+      expect(errors).toContain('credentials invalid');
     });
   });
 
