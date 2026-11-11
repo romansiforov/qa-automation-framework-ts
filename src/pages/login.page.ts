@@ -25,6 +25,14 @@ export class LoginPage extends PageHolder {
     await this.passwordInput().fill(password);
   }
 
+  /**
+   * Fills the email and password fields.
+   */
+  async fillForm(email: string, password: string): Promise<void> {
+    await this.fillEmail(email);
+    await this.fillPassword(password);
+  }
+
   async clickSignIn(): Promise<void> {
     await this.signInButton().click();
   }

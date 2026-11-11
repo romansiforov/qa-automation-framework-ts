@@ -1,6 +1,28 @@
 import { Urls } from '../../constants/urls.enum';
 import { expect, test } from '../../fixtures/test.fixture';
 
+interface LoginValidationCase {
+  name: string;
+  email: string;
+  password: string;
+  expectedError: string;
+}
+
+const loginValidationCases: LoginValidationCase[] = [
+  {
+    name: 'invalid email format',
+    email: 'invalid-email',
+    password: 'password123',
+    expectedError: 'email is invalid',
+  },
+  {
+    name: 'incorrect credentials',
+    email: 'nonexistent@test.com',
+    password: 'wrongpass',
+    expectedError: 'credentials invalid',
+  },
+];
+
 test.describe('Authentication UI Flow', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -16,20 +38,21 @@ test.describe('Authentication UI Flow', () => {
     });
   });
 
-  test('shows an error for invalid credentials', async ({ app }) => {
-    await test.step('Act: Submit an unknown email and password', async () => {
-      await app.navigateTo(Urls.Login);
-      await app.loginPage.fillEmail('nobody-auth-check@example.com');
-      await app.loginPage.fillPassword('wrong-password');
-      await app.loginPage.clickSignIn();
-    });
+  for (const loginCase of loginValidationCases) {
+    test(`rejects login for ${loginCase.name}`, async ({ app }) => {
+      await test.step(`Act: Submit ${loginCase.name}`, async () => {
+        await app.navigateTo(Urls.Login);
+        await app.loginPage.fillForm(loginCase.email, loginCase.password);
+        await app.loginPage.clickSignIn();
+      });
 
-    await test.step('Assert: The API rejects the credentials', async () => {
-      const errors = await app.loginPage.getErrorMessageTexts();
+      await test.step('Assert: The expected error is shown', async () => {
+        const errors = await app.loginPage.getErrorMessageTexts();
 
-      expect(errors).toContain('credentials invalid');
+        expect(errors).toContain(loginCase.expectedError);
+      });
     });
-  });
+  }
 
   test('signs in through the login form', async ({ app, api }) => {
     const registered = await api.auth.register();
