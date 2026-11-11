@@ -44,9 +44,7 @@ jobs:
         run: npx playwright install --with-deps
 
       - name: Run Playwright tests
-        id: tests
         run: npx playwright test
-        continue-on-error: true
 
       - name: Generate Allure report
         id: allure
@@ -78,7 +76,3 @@ jobs:
             allure-report/
           retention-days: 14
           if-no-files-found: ignore
-
-      - name: Mark the job failed when tests failed
-        if: ${{ steps.tests.outcome == 'failure' }}
-        run: exit 1
