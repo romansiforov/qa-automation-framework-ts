@@ -121,4 +121,4 @@ That command runs the suite, builds `allure-report`, and opens it. The separate 
 
 `.github/workflows/playwright.yml` runs on push and pull request to `main` and `master`, and on manual dispatch.
 
-On `ubuntu-latest` with Node 20 it installs dependencies, runs `npm run quality:check`, installs Playwright browsers, and runs the suite. A TypeScript, ESLint, Prettier, or test failure fails the job. Traces, the Playwright report, and the Allure report are uploaded as artifacts for 14 days. On a push to `main` or `master`, the Allure report is also published to the `gh-pages` branch. Pull requests do not publish that branch.
+On `ubuntu-24.04` with Node 20 it installs dependencies, runs `npm run quality:check`, installs Playwright browsers, and runs the suite. Ubuntu 24.04 is pinned because this Playwright version's WebKit needs `libicu74`. A TypeScript, ESLint, Prettier, or test failure fails the job. Traces, the Playwright report, and the Allure report are uploaded as artifacts for 14 days. On a push to `main` or `master`, the Allure report is also published to the `gh-pages` branch. Pull requests do not publish that branch.

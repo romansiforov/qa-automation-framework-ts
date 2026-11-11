@@ -13,7 +13,8 @@ permissions:
 jobs:
   test:
     timeout-minutes: 60
-    runs-on: ubuntu-latest
+    # Playwright 1.64 WebKit needs libicu74, which ubuntu-latest (Ubuntu 26) no longer ships.
+    runs-on: ubuntu-24.04
     env:
       # The suite registers its own user. These values only satisfy CONFIG validation.
       USER_EMAIL: ci-user@example.com
@@ -44,9 +45,7 @@ jobs:
         run: npx playwright install --with-deps
 
       - name: Run Playwright tests
-        id: tests
         run: npx playwright test
-        continue-on-error: true
 
       - name: Generate Allure report
         id: allure
@@ -78,7 +77,3 @@ jobs:
             allure-report/
           retention-days: 14
           if-no-files-found: ignore
-
-      - name: Mark the job failed when tests failed
-        if: ${{ steps.tests.outcome == 'failure' }}
-        run: exit 1
