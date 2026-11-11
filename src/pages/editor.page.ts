@@ -28,6 +28,8 @@ export class EditorPage extends PageHolder {
   readonly publishButton = (): Locator =>
     this.page.getByRole('button', { name: 'Publish Article' });
 
+  readonly errorMessages = (): Locator => this.page.locator('.error-messages');
+
   /**
    * Waits until the editor form is rendered and ready for input.
    */
