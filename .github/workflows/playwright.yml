@@ -13,7 +13,8 @@ permissions:
 jobs:
   test:
     timeout-minutes: 60
-    runs-on: ubuntu-latest
+    # Playwright 1.64 WebKit needs libicu74, which ubuntu-latest (Ubuntu 26) no longer ships.
+    runs-on: ubuntu-24.04
     env:
       # The suite registers its own user. These values only satisfy CONFIG validation.
       USER_EMAIL: ci-user@example.com
