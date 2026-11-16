@@ -1,6 +1,6 @@
 # Conduit Test Automation
 
-Playwright and TypeScript framework for the [Conduit (RealWorld)](https://demo.realworld.show/) demo. API tests check the contract. UI tests check the signed-in and signed-out journeys. Hybrid tests create data through the API and assert it in the browser.
+Playwright and TypeScript framework for the [Conduit (RealWorld)](https://demo.realworld.show/) demo. API tests check the contract. UI tests check the signed-in and signed-out journeys, a mocked server error, and WCAG scans. Hybrid tests create data through the API and assert it in the browser.
 
 The target UI is `https://demo.realworld.show`. The API is `https://api.realworld.show/api`.
 
@@ -13,6 +13,7 @@ The target UI is `https://demo.realworld.show`. The API is `https://api.realworl
 | Page Object Model       | `PageHolder` base, `Application` aggregator                          |
 | Allure                  | `allure-playwright` results and an HTML report                       |
 | Faker                   | Unique users and articles                                            |
+| axe-core                | WCAG A and AA scans through `@axe-core/playwright`                   |
 | ESLint, Prettier, Husky | Local quality gate, also run in CI                                   |
 
 API calls use Playwright's request API. There is no separate HTTP client.
@@ -46,6 +47,8 @@ Authentication UI tests clear that storage and start signed out. One of them inj
 
 **Navigation is centralized.** `app.navigateTo` is the only `page.goto`. Routes live in `Urls`. Article and editor slugs are built on the page objects.
 
+**Failures and accessibility are asserted in the test.** The editor spec intercepts `POST /api/articles` and returns `500`. The page stays on the editor and shows `.error-messages`. Accessibility specs attach the full axe JSON and fail on any new critical or serious violation. The known demo baseline is `html-has-lang` and `color-contrast`.
+
 ## Project structure
 
 ```text
@@ -64,7 +67,7 @@ src/
   support/global-setup.ts  one login and the storageState file
   tests/
     api/                   article CRUD
-    ui/                    login validation, sign-in, token injection
+    ui/                    login, 500 publish mock, WCAG scans
     e2e/                   hybrid article create and publish
   utils/
     data-generator.ts      faker payloads
@@ -95,15 +98,15 @@ npx playwright install --with-deps
 
 ## Execution
 
-| Command                    | What it runs                              |
-| -------------------------- | ----------------------------------------- |
-| `npm run test:api`         | Article CRUD under `src/tests/api`        |
-| `npm run test:ui-only`     | Authentication flows under `src/tests/ui` |
-| `npm run test:e2e:article` | Hybrid article flow                       |
-| `npm run test:e2e`         | The full suite, headless                  |
-| `npm run test:ui`          | Playwright UI mode                        |
-| `npm run test:headed`      | Headed browsers                           |
-| `npm run quality:check`    | `tsc --noEmit`, ESLint, and Prettier      |
+| Command                    | What it runs                                   |
+| -------------------------- | ---------------------------------------------- |
+| `npm run test:api`         | Article CRUD under `src/tests/api`             |
+| `npm run test:ui-only`     | UI specs: auth, API mocking, and accessibility |
+| `npm run test:e2e:article` | Hybrid article flow                            |
+| `npm run test:e2e`         | The full suite, headless                       |
+| `npm run test:ui`          | Playwright UI mode                             |
+| `npm run test:headed`      | Headed browsers                                |
+| `npm run quality:check`    | `tsc --noEmit`, ESLint, and Prettier           |
 
 Projects are Chromium, Firefox, and WebKit. Add `--project=chromium` to run one browser. CI retries failed tests twice and uses one worker. Local runs do not retry.
 
